@@ -1,36 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Stock Watchlist & Dip Finder
 
-## Getting Started
+A modern, mobile-first stock analysis application built with Next.js 15, Supabase, and Tailwind CSS. This tool helps investors identify potential "dips" in the market by ranking stocks based on technical and fundamental metrics.
 
-First, run the development server:
+## 🚀 Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Personalized Watchlist**: Add and track your favorite stocks in real-time.
+- **Dip Finder Ranking**: Intelligent scoring system that ranks stocks based on:
+  - Price proximity to 20, 50, 100, and 200-day Moving Averages.
+  - Price-to-Earnings (PE) ratios (Current, NTM, TTM).
+  - Free Cash Flow (FCF) Yield.
+- **Real-time Data**: Integrated with Financial Modeling Prep (FMP) API for accurate market data.
+- **Smart Caching**: Minimized API calls via Supabase PostgreSQL caching to optimize for free-tier limits.
+- **Performance Tracking**: View price changes across multiple timeframes (YTD, 1M, 3M, 6M, 1Y, 3Y, 5Y).
+- **Responsive Design**: Elegant UI that looks great on both mobile and desktop.
+
+## 🛠 Tech Stack
+
+- **Framework**: [Next.js 15](https://nextjs.org/) (App Router)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **Database & Auth**: [Supabase](https://supabase.com/)
+- **Data Provider**: [Financial Modeling Prep (FMP) API](https://financialmodelingprep.com/developer/docs/)
+- **Icons**: [Lucide React](https://lucide.dev/)
+
+## 🏁 Getting Started
+
+### Prerequisites
+
+- Node.js 18.x or later
+- A Supabase project
+- An FMP API Key
+
+### Installation
+
+1. **Clone the repository**:
+   ```bash
+   git clone <repository-url>
+   cd stock_watchlist
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+3. **Set up environment variables**:
+   Create a `.env.local` file in the root directory and add your keys:
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   FMP_API_KEY=your_fmp_api_key
+   ```
+
+4. **Run the development server**:
+   ```bash
+   npm run dev
+   ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📊 Dip Finder Logic
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The "Dip Finder" calculates a composite score for each stock:
+- **Technical (50%)**: Measures how far the current price is below key moving averages. The further below, the higher the "dip" score.
+- **Fundamental (50%)**: Evaluates valuation metrics like PE Ratio and FCF Yield relative to historical or sector averages.
 
-## Learn More
+## 📄 License
 
-To learn more about Next.js, take a look at the following resources:
+This project is licensed under the MIT License.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
