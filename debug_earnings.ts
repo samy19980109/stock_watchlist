@@ -22,7 +22,7 @@ async function main() {
     console.log('--- 1. Testing FMP Earnings API ---');
     const symbolsStr = symbols.join(',');
     const url = `${BASE_URL}/earnings?symbol=${symbolsStr}&apikey=${FMP_API_KEY}`;
-    console.log(`Fetching: ${url.replace(FMP_API_KEY, 'HIDDEN')}`);
+    console.log(`Fetching: ${url.replace(FMP_API_KEY || '', 'HIDDEN')}`);
 
     try {
         const res = await fetch(url);

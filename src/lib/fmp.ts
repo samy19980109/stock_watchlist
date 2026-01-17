@@ -1,6 +1,7 @@
 'use server';
 
 import { supabaseService as supabase } from './supabase';
+import { Json } from '@/types/supabase';
 
 const FMP_API_KEY = process.env.FMP_API_KEY;
 const BASE_URL = 'https://financialmodelingprep.com/stable';
@@ -17,6 +18,14 @@ export interface PriceChangeData {
     "5Y": number;
     "10Y": number;
     "max": number;
+}
+
+interface StockMetadata {
+    priceChanges?: PriceChangeData;
+    nextEarnings?: {
+        date: string;
+        time?: string;
+    };
 }
 
 export interface StockFundamentalData {
@@ -59,11 +68,14 @@ export async function getStocksData(symbols: string[]): Promise<StockFundamental
 
     if (cachedStocks && !cacheError) {
         cachedStocks.forEach(cachedData => {
-            const lastUpdated = new Date(cachedData.last_updated).getTime();
+            const lastUpdated = cachedData.last_updated ? new Date(cachedData.last_updated).getTime() : 0;
             const cachedPrice = Number(cachedData.current_price);
 
+            // Safe cast metadata
+            const metadata = cachedData.metadata as unknown as StockMetadata | null;
+
             // Require priceChanges to be present in cache to consider it valid for this feature
-            if (now - lastUpdated < CACHE_EXPIRY_MS && cachedPrice > 0 && cachedData.metadata?.priceChanges) {
+            if (now - lastUpdated < CACHE_EXPIRY_MS && cachedPrice > 0 && metadata?.priceChanges) {
                 stocksMap.set(cachedData.symbol, {
                     symbol: cachedData.symbol,
                     name: cachedData.name,
@@ -75,8 +87,8 @@ export async function getStocksData(symbols: string[]): Promise<StockFundamental
                     sma100: Number(cachedData.sma_100),
                     sma50: Number(cachedData.sma_50),
                     sma20: Number(cachedData.sma_20),
-                    priceChanges: cachedData.metadata?.priceChanges as PriceChangeData,
-                    nextEarnings: cachedData.metadata?.nextEarnings,
+                    priceChanges: metadata.priceChanges,
+                    nextEarnings: metadata.nextEarnings,
                 });
             }
         });
@@ -166,23 +178,7 @@ export async function getStocksData(symbols: string[]): Promise<StockFundamental
                         time: upcoming[0].time || 'N/A'
                     };
                 } else if (earningsArr.length > 0) {
-                    // If no future earnings, maybe just show the latest one? 
-                    // Or maybe better to show nothing if we only care about "next"
-                    // But let's check if the API returns just the next one as per user sample
-                    // User sample date "2025-10-29" is very far in future (given current date 2026-01-17... wait, current date is 2026? Additional metadata says 2026-01-17. Ok.)
-                    // If current date is 2026, and example is 2025... wait.
-                    // User example: "date": "2025-10-29". 
-                    // The user said: "show the next earnings date... The Api returns josn like: ..."
-                    // The example date 2025-10-29 is in the PAST relative to 2026-01-17. 
-                    // Maybe the user's example is just an example or my time is weird. 
-                    // Ah, the user's "current local time" in metadata is 2026.
-                    // I will logic: filter for date >= today. If none, maybe show the last one? 
-                    // "show the next earnings date" -> implies future.
-                    // I will stick to finding >= today.
-
-                    // Wait, if the user input `fetch(`${BASE_URL}/earnings...`)`, FMP documentation says `/earnings` returns historical earnings unless specified?
-                    // Usually `/earnings-calendar` is for future. 
-                    // But I will follow user instructions on the URL and response format, but add logic to find the *next* one if multiple are returned.
+                    // Fallback logic could go here
                 }
             }
 
@@ -226,7 +222,7 @@ export async function getStocksData(symbols: string[]): Promise<StockFundamental
                 metadata: {
                     priceChanges: fullData.priceChanges,
                     nextEarnings: fullData.nextEarnings
-                }
+                } as unknown as Json // Explicit cast to satisfy strict Json type
             });
 
             return fullData;
