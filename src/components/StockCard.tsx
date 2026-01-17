@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, Info } from 'lucide-react';
+import { ArrowDown, ArrowUp, Info, AlertTriangle } from 'lucide-react';
 import { StockFundamentalData } from '@/lib/fmp';
 import { calculateDipScore } from '@/lib/scoring';
 
@@ -10,6 +10,28 @@ export default function StockCard({ stock }: { stock: StockFundamentalData }) {
         if (s > 40) return 'text-amber-500';
         return 'text-rose-500';
     };
+
+    if (stock.error) {
+        return (
+            <div className="dip-card glass p-5 rounded-2xl flex flex-col gap-4 border-rose-500/30 bg-rose-500/5 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-3">
+                    <AlertTriangle className="text-rose-500 animate-pulse" size={24} />
+                </div>
+                <div className="flex justify-between items-start">
+                    <div>
+                        <h3 className="text-xl font-bold text-gray-400">{stock.symbol}</h3>
+                        <p className="text-sm text-gray-500">Failed to fetch data</p>
+                    </div>
+                </div>
+                <div className="flex-1 flex flex-col justify-center items-center py-4 text-center">
+                    <p className="text-xs text-rose-400 font-medium px-4">{stock.error}</p>
+                </div>
+                <div className="text-[10px] text-gray-600 mt-auto uppercase tracking-wider font-bold">
+                    Stale or Invalid Symbol
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="dip-card glass p-5 rounded-2xl flex flex-col gap-4">

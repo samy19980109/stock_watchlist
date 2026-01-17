@@ -17,6 +17,7 @@ export default function Dashboard({ initialStocks }: DashboardProps) {
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [searchTerm, setSearchTerm] = useState('');
     const [sortBy, setSortBy] = useState<'score' | 'fcfYield' | 'pe' | 'price' | 'name'>('score');
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         // We only need to fetch if the user has a custom watchlist that differs from the default
@@ -38,6 +39,7 @@ export default function Dashboard({ initialStocks }: DashboardProps) {
 
                     if (symbols.length > 0) {
                         setLoading(true);
+                        setError(null);
                         // Optimization: verify if the initialStocks contain exactly these symbols to avoid re-fetching
                         const initialSymbols = initialStocks.map(s => s.symbol).sort();
                         const storedSymbolsSorted = [...symbols].sort();
@@ -46,13 +48,18 @@ export default function Dashboard({ initialStocks }: DashboardProps) {
                             initialSymbols.every((val, index) => val === storedSymbolsSorted[index]);
 
                         if (!isSame) {
-                            const data = await getStocksData(symbols);
-                            setStocks(data);
+                            try {
+                                const data = await getStocksData(symbols);
+                                setStocks(data);
+                            } catch (err: any) {
+                                setError(err.message || 'Failed to fetch stock data');
+                            }
                         }
                     }
                 }
-            } catch (error) {
-                console.error('Failed to fetch user stocks:', error);
+            } catch (err: any) {
+                console.error('Failed to fetch user stocks:', err);
+                setError(err.message || 'Failed to load watchlist');
             } finally {
                 setLoading(false);
             }
@@ -107,6 +114,20 @@ export default function Dashboard({ initialStocks }: DashboardProps) {
                     />
                 </div>
             </div>
+
+            {/* Error Message */}
+            {error && (
+                <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 flex items-center gap-3 text-red-400">
+                    <Filter className="shrink-0" size={20} />
+                    <p className="text-sm font-medium">{error}</p>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="ml-auto px-4 py-1 bg-red-500/20 hover:bg-red-500/30 rounded-lg text-xs transition-colors"
+                    >
+                        Retry
+                    </button>
+                </div>
+            )}
 
             {/* Filters & Actions */}
             <div className="flex items-center justify-between glass p-2 rounded-2xl">
