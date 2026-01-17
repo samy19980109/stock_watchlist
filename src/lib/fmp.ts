@@ -31,6 +31,10 @@ export interface StockFundamentalData {
     sma50: number;
     sma20: number;
     priceChanges?: PriceChangeData;
+    nextEarnings?: {
+        date: string;
+        time?: string;
+    };
 }
 
 export async function getStocksData(symbols: string[]): Promise<StockFundamentalData[]> {
@@ -71,7 +75,8 @@ export async function getStocksData(symbols: string[]): Promise<StockFundamental
                     sma100: Number(cachedData.sma_100),
                     sma50: Number(cachedData.sma_50),
                     sma20: Number(cachedData.sma_20),
-                    priceChanges: cachedData.metadata?.priceChanges,
+                    priceChanges: cachedData.metadata?.priceChanges as PriceChangeData,
+                    nextEarnings: cachedData.metadata?.nextEarnings,
                 });
             }
         });
@@ -97,11 +102,12 @@ export async function getStocksData(symbols: string[]): Promise<StockFundamental
             // Add a small random delay to avoid hitting rate limits instantly if many symbols
             await new Promise(r => setTimeout(r, Math.random() * 500));
 
-            const [quoteRes, ratiosRes, metricsRes, priceChangeRes] = await Promise.all([
+            const [quoteRes, ratiosRes, metricsRes, priceChangeRes, earningsRes] = await Promise.all([
                 fetch(`${BASE_URL}/quote?symbol=${symbol}&apikey=${FMP_API_KEY}`),
                 fetch(`${BASE_URL}/ratios-ttm?symbol=${symbol}&apikey=${FMP_API_KEY}`),
                 fetch(`${BASE_URL}/key-metrics-ttm?symbol=${symbol}&apikey=${FMP_API_KEY}`),
-                fetch(`${BASE_URL}/stock-price-change?symbol=${symbol}&apikey=${FMP_API_KEY}`)
+                fetch(`${BASE_URL}/stock-price-change?symbol=${symbol}&apikey=${FMP_API_KEY}`),
+                fetch(`${BASE_URL}/earnings?symbol=${symbol}&apikey=${FMP_API_KEY}`)
             ]);
 
             const safeJson = async (res: Response) => {
@@ -109,11 +115,12 @@ export async function getStocksData(symbols: string[]): Promise<StockFundamental
                 try { return await res.json(); } catch (e) { return null; }
             };
 
-            const [quoteArr, ratiosArr, metricsArr, priceChangeArr] = await Promise.all([
+            const [quoteArr, ratiosArr, metricsArr, priceChangeArr, earningsArr] = await Promise.all([
                 safeJson(quoteRes),
                 safeJson(ratiosRes),
                 safeJson(metricsRes),
-                safeJson(priceChangeRes)
+                safeJson(priceChangeRes),
+                safeJson(earningsRes)
             ]);
 
             const data: Partial<StockFundamentalData> = { symbol };
@@ -145,6 +152,40 @@ export async function getStocksData(symbols: string[]): Promise<StockFundamental
                 data.priceChanges = priceChangeArr[0];
             }
 
+            // Earnings
+            if (Array.isArray(earningsArr)) {
+                // Sort by date ascending to find the next upcoming date
+                const today = new Date().toISOString().split('T')[0];
+                const upcoming = earningsArr
+                    .filter((e: any) => e.date >= today)
+                    .sort((a: any, b: any) => a.date.localeCompare(b.date));
+
+                if (upcoming.length > 0) {
+                    data.nextEarnings = {
+                        date: upcoming[0].date,
+                        time: upcoming[0].time || 'N/A'
+                    };
+                } else if (earningsArr.length > 0) {
+                    // If no future earnings, maybe just show the latest one? 
+                    // Or maybe better to show nothing if we only care about "next"
+                    // But let's check if the API returns just the next one as per user sample
+                    // User sample date "2025-10-29" is very far in future (given current date 2026-01-17... wait, current date is 2026? Additional metadata says 2026-01-17. Ok.)
+                    // If current date is 2026, and example is 2025... wait.
+                    // User example: "date": "2025-10-29". 
+                    // The user said: "show the next earnings date... The Api returns josn like: ..."
+                    // The example date 2025-10-29 is in the PAST relative to 2026-01-17. 
+                    // Maybe the user's example is just an example or my time is weird. 
+                    // Ah, the user's "current local time" in metadata is 2026.
+                    // I will logic: filter for date >= today. If none, maybe show the last one? 
+                    // "show the next earnings date" -> implies future.
+                    // I will stick to finding >= today.
+
+                    // Wait, if the user input `fetch(`${BASE_URL}/earnings...`)`, FMP documentation says `/earnings` returns historical earnings unless specified?
+                    // Usually `/earnings-calendar` is for future. 
+                    // But I will follow user instructions on the URL and response format, but add logic to find the *next* one if multiple are returned.
+                }
+            }
+
             return data;
         }));
 
@@ -164,7 +205,8 @@ export async function getStocksData(symbols: string[]): Promise<StockFundamental
                 sma100: 0,
                 sma50: data.sma50 || 0,
                 sma20: 0,
-                priceChanges: data.priceChanges
+                priceChanges: data.priceChanges,
+                nextEarnings: data.nextEarnings
             };
 
             stocksMap.set(symbol, fullData);
@@ -181,7 +223,10 @@ export async function getStocksData(symbols: string[]): Promise<StockFundamental
                 sma_50: fullData.sma50,
                 sma_20: fullData.sma20,
                 last_updated: new Date().toISOString(),
-                metadata: { priceChanges: fullData.priceChanges }
+                metadata: {
+                    priceChanges: fullData.priceChanges,
+                    nextEarnings: fullData.nextEarnings
+                }
             });
 
             return fullData;
