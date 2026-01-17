@@ -11,7 +11,9 @@ export default function StockCard({ stock }: { stock: StockFundamentalData }) {
         return 'text-rose-500';
     };
 
-    if (stock.error) {
+    const hasData = !!stock.name;
+
+    if (stock.error && !hasData) {
         return (
             <div className="dip-card glass p-5 rounded-2xl flex flex-col gap-4 border-rose-500/30 bg-rose-500/5 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-3">
@@ -37,7 +39,17 @@ export default function StockCard({ stock }: { stock: StockFundamentalData }) {
         <div className="dip-card glass p-5 rounded-2xl flex flex-col gap-4">
             <div className="flex justify-between items-start">
                 <div>
-                    <h3 className="text-xl font-bold">{stock.symbol}</h3>
+                    <div className="flex items-center gap-2">
+                        <h3 className="text-xl font-bold">{stock.symbol}</h3>
+                        {stock.error && (
+                            <div className="group/note relative">
+                                <AlertTriangle className="text-amber-500" size={16} />
+                                <div className="absolute left-0 top-full mt-2 w-48 p-2 bg-black/90 border border-white/10 rounded-lg text-[10px] text-gray-300 opacity-0 group-hover/note:opacity-100 transition-opacity z-10 pointer-events-none">
+                                    {stock.error}
+                                </div>
+                            </div>
+                        )}
+                    </div>
                     <p className="text-sm text-gray-400">{stock.name}</p>
                 </div>
                 <div className={`text-2xl font-black ${getScoreColor(score)}`}>
@@ -100,6 +112,19 @@ export default function StockCard({ stock }: { stock: StockFundamentalData }) {
                         <span>Earnings: {new Date(stock.nextEarnings.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                             {stock.nextEarnings.time && stock.nextEarnings.time !== 'N/A' && ` (${stock.nextEarnings.time})`}
                         </span>
+                    </div>
+                )}
+                {stock.lastUpdated && (
+                    <div className="pt-2 border-t border-white/5 mt-2">
+                        <p className="text-[10px] text-gray-500 uppercase tracking-tight">
+                            Last Updated: {new Date(stock.lastUpdated).toLocaleString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            })}
+                            {stock.error && <span className="text-amber-500 ml-1">(Stale)</span>}
+                        </p>
                     </div>
                 )}
             </div>

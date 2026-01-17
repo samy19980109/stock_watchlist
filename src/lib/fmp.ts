@@ -45,6 +45,7 @@ export interface StockFundamentalData {
         time?: string;
     };
     error?: string;
+    lastUpdated?: string;
 }
 
 export async function getStocksData(symbols: string[]): Promise<StockFundamentalData[]> {
@@ -87,6 +88,24 @@ export async function getStocksData(symbols: string[]): Promise<StockFundamental
                     sma20: Number(cachedData.sma_20),
                     priceChanges: metadata.priceChanges,
                     nextEarnings: metadata.nextEarnings,
+                    lastUpdated: cachedData.last_updated ?? undefined
+                });
+            } else if (cachedData.symbol) {
+                // Keep the stale version in case FMP fetch fails
+                stocksMap.set(`stale_${cachedData.symbol}`, {
+                    symbol: cachedData.symbol,
+                    name: cachedData.name,
+                    price: cachedPrice,
+                    pe: Number(cachedData.pe_ratio_ttm),
+                    peForward: Number(cachedData.pe_ratio_forward),
+                    fcfYield: Number(cachedData.fcf_yield),
+                    sma200: Number(cachedData.sma_200),
+                    sma100: Number(cachedData.sma_100),
+                    sma50: Number(cachedData.sma_50),
+                    sma20: Number(cachedData.sma_20),
+                    priceChanges: metadata?.priceChanges,
+                    nextEarnings: metadata?.nextEarnings,
+                    lastUpdated: cachedData.last_updated ?? undefined
                 });
             }
         });
@@ -172,12 +191,21 @@ export async function getStocksData(symbols: string[]): Promise<StockFundamental
                 }
 
                 if (!data.name || !data.price) {
+                    const stale = stocksMap.get(`stale_${symbol}`);
+                    if (stale) {
+                        return { ...stale, error: `Fresh data unavailable for ${symbol}. Using stale data.` };
+                    }
                     return { symbol, error: `Symbol ${symbol} not found or no data available` };
                 }
 
+                data.lastUpdated = new Date().toISOString();
                 return data;
             } catch (error) {
                 console.error(`Error fetching data for ${symbol}:`, error);
+                const stale = stocksMap.get(`stale_${symbol}`);
+                if (stale) {
+                    return { ...stale, error: error instanceof Error ? error.message : 'Unknown error' };
+                }
                 return { symbol, error: error instanceof Error ? error.message : 'Unknown error' };
             }
         }));
@@ -200,7 +228,8 @@ export async function getStocksData(symbols: string[]): Promise<StockFundamental
                 sma20: 0,
                 priceChanges: data.priceChanges,
                 nextEarnings: data.nextEarnings,
-                error: data.error
+                error: data.error,
+                lastUpdated: data.lastUpdated
             };
 
             stocksMap.set(symbol, fullData);

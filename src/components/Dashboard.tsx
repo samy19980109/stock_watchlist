@@ -51,6 +51,12 @@ export default function Dashboard({ initialStocks }: DashboardProps) {
                             try {
                                 const data = await getStocksData(symbols);
                                 setStocks(data);
+
+                                // Check if any critical errors occurred (e.g. all failed)
+                                const allFailed = data.length > 0 && data.every(s => s.error && !s.name);
+                                if (allFailed) {
+                                    setError('Failed to fetch data for all symbols. Please check your connection or API key.');
+                                }
                             } catch (err: any) {
                                 setError(err.message || 'Failed to fetch stock data');
                             }
