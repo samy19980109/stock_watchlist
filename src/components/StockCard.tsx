@@ -82,9 +82,9 @@ export default function StockCard({ stock }: { stock: StockFundamentalData }) {
                 )}
             </div>
 
-            <button className="mt-2 w-full py-2.5 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 rounded-xl font-medium transition-all text-sm">
+            {/* <button className="mt-2 w-full py-2.5 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 rounded-xl font-medium transition-all text-sm">
                 View Details
-            </button>
+            </button> */}
         </div>
     );
 }
