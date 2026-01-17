@@ -59,6 +59,14 @@ Based on an analysis of the codebase, here are several recommended improvements 
 ### Historical Charts (Sparklines)
 **Improvement:** Add small "sparkline" charts to each stock card showing the last 7-30 days of price action to give immediate visual context to the "Dip".
 
+### Show Stock Price Change [DONE]
+**Improvement:** Display price change percentages (YTD, 1M, 3M, etc.) on stock cards.
+**Benefit:** Provides quick context on recent performance trends alongside fundamental metrics.
+
+### Dashboard Filtering and Sorting [DONE]
+**Improvement:** Add ability to filter by symbol and sort by various metrics (Score, PE, FCF Yield).
+**Benefit:** Makes it easier to find the best opportunities in a large watchlist.
+
 ### Portfolio Tracking
 **Improvement:** Allow users to enter their "Cost Basis" and "Quantity" for stocks in their watchlist to track PnL alongside the dip metrics.
 
@@ -69,10 +77,26 @@ Based on an analysis of the codebase, here are several recommended improvements 
 **Current:** Search filters immediately.
 **Improvement:** Debounce the search input (wait 300ms) to prevent excessive state updates.
 
-### Customizable Scoring
-**Current:** Scoring weights are hardcoded in `src/lib/scoring.ts`.
-**Improvement:** Add a "Settings" modal allowing users to adjust the importance of "FCF Yield" vs "PE Ratio" vs "SMA Trends".
-
 ### Unit Testing
 **Current:** No tests visible.
 **Improvement:** Add **Vitest** to test the `calculateDipScore` logic.
+
+## 5. Future Roadmap & Advanced Features
+
+### Real-time Market Data
+**Improvement:** Integrate WebSockets (via FMP or Supabase Realtime) for live price updating without page refreshes.
+
+### Advanced Interactive Charts
+**Improvement:** Use **Lightweight Charts** (by TradingView) for a more professional charting experience when viewing stock details.
+
+### Alerting System
+**Improvement:** Implement price and dip-score alerts via email or push notifications using **Supabase Edge Functions** and **Resend**.
+
+### Portfolio Tracking
+**Improvement:** Expand from a simple watchlist to a portfolio tracker where users can enter cost basis and quantity to see actual PnL.
+
+### Supabase Authentication
+**Improvement:** Add user accounts so people can maintain their own private watchlists across devices.
+
+### Automated Backfill & Re-scoring
+**Improvement:** Implement a cron job (GitHub Action or Supabase Cron) to automatically refresh fundamental data and re-calculate scores every night.
