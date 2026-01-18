@@ -10,16 +10,28 @@ export const metadata: Metadata = {
     description: "Identify buying opportunities using fundamental analysis and moving averages.",
 };
 
+// Script to prevent flash of wrong theme
+const themeScript = `
+  (function() {
+    const theme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', theme);
+  })();
+`;
+
 export default function RootLayout({
     children,
 }: Readonly<{
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="en">
+        <html lang="en" suppressHydrationWarning>
+            <head>
+                <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+            </head>
             <body className={inter.className}>
                 <Layout>{children}</Layout>
             </body>
         </html>
     );
 }
+

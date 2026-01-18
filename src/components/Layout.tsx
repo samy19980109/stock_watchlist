@@ -11,7 +11,7 @@ export default function Layout({ children }: { children: ReactNode }) {
     const isActive = (path: string) => pathname === path;
 
     return (
-        <div className="min-h-screen bg-[#0a0a0a] pb-20 md:pb-0 md:pt-16 text-white">
+        <div className="min-h-screen bg-[var(--background)] pb-20 md:pb-0 md:pt-16 text-[var(--foreground)] transition-colors duration-300">
             {/* Desktop Navbar */}
             <nav className="fixed top-0 left-0 right-0 h-16 glass z-50 hidden md:flex items-center justify-between px-8 border-b border-white/10">
                 <Link href="/" className="flex items-center gap-2">
