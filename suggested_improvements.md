@@ -21,9 +21,9 @@ Based on an analysis of the codebase, here are several recommended improvements 
 - Window focus revalidation.
 - Deduping of requests.
 
-### Optimize Search/Filtering
-**Current:** Filtering happens on every keystroke.
-**Improvement:** Use `useDeferredValue` for the search term or `useMemo` for the filtered list to ensure the UI remains responsive even if the watchlist grows to hundreds of items.
+### Optimize Search/Filtering [DONE]
+**Current:** Filtering uses `useDeferredValue` for the search term and `useMemo` for the filtered list.
+**Benefit:** The UI remains responsive during rapid typing, even if the watchlist grows to hundreds of items.
 
 ### Pagination or Infinite Scroll
 **Problem:** Loading hundreds of stocks at once will degrade performance.

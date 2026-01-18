@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useDeferredValue, useMemo } from 'react';
 import Link from 'next/link';
 import { Search, Filter, TrendingDown, LayoutGrid, List as ListIcon } from 'lucide-react';
 import StockCard from '@/components/StockCard';
@@ -18,6 +18,9 @@ export default function Dashboard({ initialStocks }: DashboardProps) {
     const [searchTerm, setSearchTerm] = useState('');
     const [sortBy, setSortBy] = useState<'score' | 'fcfYield' | 'pe' | 'price' | 'name' | 'earningsDate'>('score');
     const [error, setError] = useState<string | null>(null);
+
+    // Defer the search term to keep the input responsive during rapid typing
+    const deferredSearchTerm = useDeferredValue(searchTerm);
 
     useEffect(() => {
         // We only need to fetch if the user has a custom watchlist that differs from the default
@@ -74,35 +77,39 @@ export default function Dashboard({ initialStocks }: DashboardProps) {
         fetchUserData();
     }, [initialStocks]);
 
-    const filteredAndSortedStocks = stocks
-        .filter(stock =>
-            stock.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            stock.name.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-        .map(stock => ({
-            ...stock,
-            score: calculateDipScore(stock).score
-        }))
-        .sort((a, b) => {
-            switch (sortBy) {
-                case 'score':
-                    return b.score - a.score;
-                case 'fcfYield':
-                    return b.fcfYield - a.fcfYield;
-                case 'pe':
-                    return a.pe - b.pe; // Lower PE is usually better
-                case 'price':
-                    return a.price - b.price;
-                case 'name':
-                    return a.name.localeCompare(b.name);
-                case 'earningsDate':
-                    const dateA = a.nextEarnings?.date || '9999-12-31';
-                    const dateB = b.nextEarnings?.date || '9999-12-31';
-                    return dateA.localeCompare(dateB);
-                default:
-                    return 0;
-            }
-        });
+    // Memoize the filtered and sorted stocks list to avoid recalculation on every render
+    // Uses deferredSearchTerm so the input stays responsive during rapid typing
+    const filteredAndSortedStocks = useMemo(() => {
+        return stocks
+            .filter(stock =>
+                stock.symbol.toLowerCase().includes(deferredSearchTerm.toLowerCase()) ||
+                stock.name.toLowerCase().includes(deferredSearchTerm.toLowerCase())
+            )
+            .map(stock => ({
+                ...stock,
+                score: calculateDipScore(stock).score
+            }))
+            .sort((a, b) => {
+                switch (sortBy) {
+                    case 'score':
+                        return b.score - a.score;
+                    case 'fcfYield':
+                        return b.fcfYield - a.fcfYield;
+                    case 'pe':
+                        return a.pe - b.pe; // Lower PE is usually better
+                    case 'price':
+                        return a.price - b.price;
+                    case 'name':
+                        return a.name.localeCompare(b.name);
+                    case 'earningsDate':
+                        const dateA = a.nextEarnings?.date || '9999-12-31';
+                        const dateB = b.nextEarnings?.date || '9999-12-31';
+                        return dateA.localeCompare(dateB);
+                    default:
+                        return 0;
+                }
+            });
+    }, [stocks, deferredSearchTerm, sortBy]);
 
     return (
         <div className="space-y-8">
