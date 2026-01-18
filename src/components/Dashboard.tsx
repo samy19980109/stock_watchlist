@@ -16,7 +16,7 @@ export default function Dashboard({ initialStocks }: DashboardProps) {
     const [loading, setLoading] = useState(false);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [searchTerm, setSearchTerm] = useState('');
-    const [sortBy, setSortBy] = useState<'score' | 'fcfYield' | 'pe' | 'price' | 'name'>('score');
+    const [sortBy, setSortBy] = useState<'score' | 'fcfYield' | 'pe' | 'price' | 'name' | 'earningsDate'>('score');
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -95,6 +95,10 @@ export default function Dashboard({ initialStocks }: DashboardProps) {
                     return a.price - b.price;
                 case 'name':
                     return a.name.localeCompare(b.name);
+                case 'earningsDate':
+                    const dateA = a.nextEarnings?.date || '9999-12-31';
+                    const dateB = b.nextEarnings?.date || '9999-12-31';
+                    return dateA.localeCompare(dateB);
                 default:
                     return 0;
             }
@@ -156,6 +160,7 @@ export default function Dashboard({ initialStocks }: DashboardProps) {
                         <option value="pe">Sort by: PE Ratio</option>
                         <option value="price">Sort by: Price</option>
                         <option value="name">Sort by: Name</option>
+                        <option value="earningsDate">Sort by: Next Earnings</option>
                     </select>
                 </div>
 
