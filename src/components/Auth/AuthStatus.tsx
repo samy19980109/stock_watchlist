@@ -5,6 +5,7 @@ import { createClient } from '@/utils/supabase/client';
 import { User, LogOut, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { User as SupabaseUser } from '@supabase/supabase-js';
+import { syncLocalWatchlistToSupabase } from '@/lib/watchlist-service';
 
 export default function AuthStatus({ serverUser }: { serverUser?: SupabaseUser | null }) {
     const [user, setUser] = useState<SupabaseUser | null>(serverUser ?? null);
@@ -17,13 +18,19 @@ export default function AuthStatus({ serverUser }: { serverUser?: SupabaseUser |
         const getUser = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             setUser(user);
+            if (user) {
+                syncLocalWatchlistToSupabase();
+            }
             setLoading(false);
         };
 
         getUser();
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             setUser(session?.user ?? null);
+            if (event === 'SIGNED_IN' && session?.user) {
+                syncLocalWatchlistToSupabase();
+            }
             setLoading(false);
         });
 

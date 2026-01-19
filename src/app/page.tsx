@@ -10,9 +10,31 @@ export default async function Page() {
 
     // Default symbols
     const DEFAULT_SYMBOLS = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'META'];
+    let symbols = DEFAULT_SYMBOLS;
+
+    if (user) {
+        // Try to fetch user's customized watchlist
+        const { data: watchlist } = await supabase
+            .from('watchlists')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('name', 'Default')
+            .single();
+
+        if (watchlist) {
+            const { data: items } = await supabase
+                .from('watchlist_items')
+                .select('stock_symbol')
+                .eq('watchlist_id', watchlist.id);
+
+            if (items && items.length > 0) {
+                symbols = items.map(item => item.stock_symbol);
+            }
+        }
+    }
 
     // Fetch initial data on the server
-    const initialStocks = await getStocksData(DEFAULT_SYMBOLS);
+    const initialStocks = await getStocksData(symbols);
 
     return (
         <main>

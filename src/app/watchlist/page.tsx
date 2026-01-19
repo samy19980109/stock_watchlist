@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Search, Plus, Trash2, TrendingUp, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
+import { getWatchlistSymbols, addSymbolToWatchlist, removeSymbolFromWatchlist } from '@/lib/watchlist-service';
 
 export default function WatchlistPage() {
     const [symbols, setSymbols] = useState<string[]>([]);
@@ -10,23 +11,14 @@ export default function WatchlistPage() {
     const [status, setStatus] = useState<{ type: 'idle' | 'loading' | 'success' | 'error', message?: string }>({ type: 'idle' });
 
     useEffect(() => {
-        const stored = localStorage.getItem('watchlist_symbols');
-        if (stored) {
-            setSymbols(JSON.parse(stored));
-        } else {
-            // Default symbols if empty
-            const defaults = ['AAPL', 'ADBE', 'AMD', 'COST', 'MSFT', 'GOOGL', 'AMZN', 'NFLX', 'META', 'TSLA', 'NVDA', 'TSM', 'UBER', 'UNH', 'V'];
-            setSymbols(defaults);
-            localStorage.setItem('watchlist_symbols', JSON.stringify(defaults));
-        }
+        const fetchSymbols = async () => {
+            const data = await getWatchlistSymbols();
+            setSymbols(data);
+        };
+        fetchSymbols();
     }, []);
 
-    const saveSymbols = (newSymbols: string[]) => {
-        setSymbols(newSymbols);
-        localStorage.setItem('watchlist_symbols', JSON.stringify(newSymbols));
-    };
-
-    const handleAdd = (e: React.FormEvent) => {
+    const handleAdd = async (e: React.FormEvent) => {
         e.preventDefault();
         const normalized = newSymbol.trim().toUpperCase();
 
@@ -38,14 +30,25 @@ export default function WatchlistPage() {
             return;
         }
 
-        saveSymbols([normalized, ...symbols]);
-        setNewSymbol('');
-        setStatus({ type: 'success', message: `Added ${normalized} successfully!` });
-        setTimeout(() => setStatus({ type: 'idle' }), 3000);
+        try {
+            await addSymbolToWatchlist(normalized);
+            setSymbols([normalized, ...symbols]);
+            setNewSymbol('');
+            setStatus({ type: 'success', message: `Added ${normalized} successfully!` });
+            setTimeout(() => setStatus({ type: 'idle' }), 3000);
+        } catch (err) {
+            setStatus({ type: 'error', message: `Failed to add ${normalized}.` });
+            setTimeout(() => setStatus({ type: 'idle' }), 3000);
+        }
     };
 
-    const handleRemove = (symbol: string) => {
-        saveSymbols(symbols.filter(s => s !== symbol));
+    const handleRemove = async (symbol: string) => {
+        try {
+            await removeSymbolFromWatchlist(symbol);
+            setSymbols(symbols.filter(s => s !== symbol));
+        } catch (err) {
+            console.error('Failed to remove symbol:', err);
+        }
     };
 
     return (

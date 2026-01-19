@@ -8,6 +8,7 @@ import { getStocksData, StockFundamentalData } from '@/lib/fmp';
 import { calculateDipScore } from '@/lib/scoring';
 import { createClient } from '@/utils/supabase/client';
 import { User as SupabaseUser } from '@supabase/supabase-js';
+import { getWatchlistSymbols } from '@/lib/watchlist-service';
 
 interface DashboardProps {
     initialStocks: StockFundamentalData[];
@@ -29,51 +30,40 @@ export default function Dashboard({ initialStocks, serverUser }: DashboardProps)
     const deferredSearchTerm = useDeferredValue(searchTerm);
 
     useEffect(() => {
-        // We only need to fetch if the user has a custom watchlist that differs from the default
-        // For now, let's keep the logic simple: verify if we have stored symbols, 
-        // and if they are different from what we might have loaded, fetch them.
-        // However, since we can't easily know the default symbols here without duplication
-        // or passing them down, we'll implement a check.
-
         const fetchUserData = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             setUser(user);
 
             try {
-                const stored = localStorage.getItem('watchlist_symbols');
-                if (stored) {
-                    const symbols = JSON.parse(stored);
-                    // If we have custom symbols, we should fetch them to ensure we show the user's specific list
-                    // Optimization: We could check if initialStocks matches symbols, but that requires comparing arrays.
-                    // For now, if there is a stored list, we fetch it to be safe and update the view.
-                    // But if it's the first load and we passed data, maybe we can skip?
-                    // Let's assume if the user has customized their list, we want to respect that override.
+                setLoading(true);
+                setError(null);
 
-                    if (symbols.length > 0) {
-                        setLoading(true);
-                        setError(null);
-                        // Optimization: verify if the initialStocks contain exactly these symbols to avoid re-fetching
-                        const initialSymbols = initialStocks.map(s => s.symbol).sort();
-                        const storedSymbolsSorted = [...symbols].sort();
+                const symbols = await getWatchlistSymbols();
 
-                        const isSame = initialSymbols.length === storedSymbolsSorted.length &&
-                            initialSymbols.every((val, index) => val === storedSymbolsSorted[index]);
+                if (symbols.length > 0) {
+                    // Optimization: verify if the initialStocks contain exactly these symbols to avoid re-fetching
+                    const initialSymbols = initialStocks.map(s => s.symbol).sort();
+                    const storedSymbolsSorted = [...symbols].sort();
 
-                        if (!isSame) {
-                            try {
-                                const data = await getStocksData(symbols);
-                                setStocks(data);
+                    const isSame = initialSymbols.length === storedSymbolsSorted.length &&
+                        initialSymbols.every((val, index) => val === storedSymbolsSorted[index]);
 
-                                // Check if any critical errors occurred (e.g. all failed)
-                                const allFailed = data.length > 0 && data.every(s => s.error && !s.name);
-                                if (allFailed) {
-                                    setError('Failed to fetch data for all symbols. Please check your connection or API key.');
-                                }
-                            } catch (err: any) {
-                                setError(err.message || 'Failed to fetch stock data');
+                    if (!isSame) {
+                        try {
+                            const data = await getStocksData(symbols);
+                            setStocks(data);
+
+                            // Check if any critical errors occurred (e.g. all failed)
+                            const allFailed = data.length > 0 && data.every(s => s.error && !s.name);
+                            if (allFailed) {
+                                setError('Failed to fetch data for all symbols. Please check your connection or API key.');
                             }
+                        } catch (err: any) {
+                            setError(err.message || 'Failed to fetch stock data');
                         }
                     }
+                } else {
+                    setStocks([]);
                 }
             } catch (err: any) {
                 console.error('Failed to fetch user stocks:', err);
