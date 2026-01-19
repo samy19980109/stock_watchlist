@@ -6,7 +6,9 @@ import { Mail, Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
+    const [otp, setOtp] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [showOtpInput, setShowOtpInput] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
     const supabase = createClient();
@@ -26,7 +28,8 @@ export default function LoginPage() {
         if (error) {
             setMessage({ type: 'error', text: error.message });
         } else {
-            setMessage({ type: 'success', text: 'Check your email for the magic link!' });
+            setMessage({ type: 'success', text: 'Check your email for the magic link or 6-digit code!' });
+            setShowOtpInput(true);
         }
         setIsLoading(false);
     };
@@ -38,6 +41,27 @@ export default function LoginPage() {
                 redirectTo: `${window.location.origin}/auth/callback`,
             },
         });
+    };
+
+    const handleVerifyOtp = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsLoading(true);
+        setMessage(null);
+
+        const { error } = await supabase.auth.verifyOtp({
+            email,
+            token: otp,
+            type: 'email',
+        });
+
+        if (error) {
+            setMessage({ type: 'error', text: error.message });
+        } else {
+            // After verification, Supabase will automatically handle session storage
+            // and the user should be redirected by the auth listener or manual redirect
+            window.location.href = '/';
+        }
+        setIsLoading(false);
     };
 
     return (
@@ -83,51 +107,110 @@ export default function LoginPage() {
                         </div>
                     </div>
 
-                    <form onSubmit={handleMagicLink} className="space-y-4">
-                        <div>
-                            <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1.5">
-                                Email Address
-                            </label>
-                            <div className="relative">
-                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-                                <input
-                                    id="email"
-                                    type="email"
-                                    placeholder="name@example.com"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder:text-gray-600 transition-all font-mono"
-                                    required
-                                />
+                    {!showOtpInput ? (
+                        <form onSubmit={handleMagicLink} className="space-y-4">
+                            <div>
+                                <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1.5">
+                                    Email Address
+                                </label>
+                                <div className="relative">
+                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                                    <input
+                                        id="email"
+                                        type="email"
+                                        placeholder="name@example.com"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder:text-gray-600 transition-all font-mono"
+                                        required
+                                    />
+                                </div>
                             </div>
-                        </div>
 
-                        {message && (
-                            <div
-                                className={`p-3 rounded-lg text-sm font-medium ${message.type === 'success'
+                            {message && (
+                                <div
+                                    className={`p-3 rounded-lg text-sm font-medium ${message.type === 'success'
                                         ? 'bg-green-500/10 text-green-400 border border-green-500/20'
                                         : 'bg-red-500/10 text-red-400 border border-red-500/20'
-                                    }`}
-                            >
-                                {message.text}
-                            </div>
-                        )}
-
-                        <button
-                            type="submit"
-                            disabled={isLoading}
-                            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
-                        >
-                            {isLoading ? (
-                                <>
-                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                    Sending Link...
-                                </>
-                            ) : (
-                                'Send Magic Link'
+                                        }`}
+                                >
+                                    {message.text}
+                                </div>
                             )}
-                        </button>
-                    </form>
+
+                            <button
+                                type="submit"
+                                disabled={isLoading}
+                                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
+                            >
+                                {isLoading ? (
+                                    <>
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                        Sending Link...
+                                    </>
+                                ) : (
+                                    'Send Magic Link'
+                                )}
+                            </button>
+                        </form>
+                    ) : (
+                        <form onSubmit={handleVerifyOtp} className="space-y-4">
+                            <div>
+                                <label htmlFor="otp" className="block text-sm font-medium text-gray-300 mb-1.5">
+                                    6-Digit Verification Code
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        id="otp"
+                                        type="text"
+                                        placeholder="123456"
+                                        value={otp}
+                                        onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder:text-gray-600 transition-all font-mono text-center text-2xl tracking-[0.5em]"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            {message && (
+                                <div
+                                    className={`p-3 rounded-lg text-sm font-medium ${message.type === 'success'
+                                        ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                                        : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                                        }`}
+                                >
+                                    {message.text}
+                                </div>
+                            )}
+
+                            <div className="space-y-3">
+                                <button
+                                    type="submit"
+                                    disabled={isLoading || otp.length !== 6}
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
+                                >
+                                    {isLoading ? (
+                                        <>
+                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                            Verifying...
+                                        </>
+                                    ) : (
+                                        'Verify Code'
+                                    )}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowOtpInput(false);
+                                        setMessage(null);
+                                    }}
+                                    className="w-full text-sm text-gray-400 hover:text-white transition-colors"
+                                >
+                                    Back to Email
+                                </button>
+                            </div>
+                        </form>
+                    )}
                 </div>
             </div>
         </div>

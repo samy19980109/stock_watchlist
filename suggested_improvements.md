@@ -50,9 +50,9 @@ Based on an analysis of the codebase, here are several recommended improvements 
 **Improvement:** Use a library like **p-limit** or **bottleneck** to strictly limit concurrency (e.g., max 5 requests at a time).
 **Benefit:** Prevents hitting FMP API rate limits more reliably.
 
-### Better Error Feedback
-**Current:** Errors are logged to the console.
-**Improvement:** Accurate error messages in the UI logic. If a specific symbol fails to fetch, show a warning indicator on that stock card.
+### Better Error Feedback [DONE]
+**Current:** Errors are logged to the console and displayed in the UI logic.
+**Benefit:** Accurate error messages in the UI logic. If a specific symbol fails to fetch, show a warning indicator on that stock card and preserve stale data if available.
 
 ## 4. Features & UX
 
@@ -95,8 +95,9 @@ Based on an analysis of the codebase, here are several recommended improvements 
 ### Portfolio Tracking
 **Improvement:** Expand from a simple watchlist to a portfolio tracker where users can enter cost basis and quantity to see actual PnL.
 
-### Supabase Authentication
+### Supabase Authentication [DONE]
 **Improvement:** Add user accounts so people can maintain their own private watchlists across devices.
+**Benefit:** Personalization, security, and data persistence for individual users.
 
 ### Automated Backfill & Re-scoring
 **Improvement:** Implement a cron job (GitHub Action or Supabase Cron) to automatically refresh fundamental data and re-calculate scores every night.
@@ -241,3 +242,45 @@ Based on an analysis of the codebase, here are several recommended improvements 
 
 ### API Mocking for Development
 **Improvement:** Create mock FMP responses for local development to avoid hitting rate limits during development.
+
+---
+
+## 17. Deep Fundamental Analysis (The "Quality" Filter)
+
+### "High Quality Compounding" Checklist
+**Improvement:** Add a set of automated checks for quality:
+- **ROIC > 15%**: consistently over 5 years.
+- **Gross Margin Stability**: ensuring the company has a moat/pricing power.
+- **Debt/FCF < 3**: ensuring the company isn't over-leveraged.
+**Benefit:** Helps filter out "cheap" stocks that are actually low-quality value traps.
+
+### Historical Valuation Context
+**Improvement:** Compare current P/E or FCF Yield against the 5-year mean/median.
+**Benefit:** Knowing a stock is at a "dip" price is good; knowing it's at its lowest valuation in 5 years is better.
+
+### Share Count Reduction (Buybacks)
+**Improvement:** Trace the weighted average shares outstanding (diluted) over the last 5 years.
+**Benefit:** Real compounding machines often use FCF to retire shares, significantly boosting shareholder value over time.
+
+---
+
+## 18. Enhanced Authentication & Profile
+
+### Social Logins
+**Improvement:** Add Google, Apple, and GitHub OAuth providers via Supabase.
+**Benefit:** Reduces friction for new users to sign up and start tracking their watchlist.
+
+### Profile Management
+**Improvement:** Create a dedicated `/profile` or `/settings` page for users to manage their account, preferred currency, and notification settings.
+
+---
+
+## 19. Advanced Watchlist Insights
+
+### Sector Benchmarking
+**Improvement:** Compare a stock's performance and fundamental metrics against its sector average.
+**Benefit:** Helps determine if a "dip" is company-specific or part of a broader sector trend.
+
+### Insider Activity Integration
+**Improvement:** Add a visual indicator or data point showing recent insider buying or selling.
+**Benefit:** Insider buying can often be a strong confirmation signal for a "buy the dip" strategy.
