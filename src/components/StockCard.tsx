@@ -1,8 +1,15 @@
+import { useState, useEffect } from 'react';
 import { ArrowDown, ArrowUp, Info, AlertTriangle } from 'lucide-react';
 import { StockFundamentalData } from '@/lib/fmp';
 import { calculateDipScore } from '@/lib/scoring';
 
 export default function StockCard({ stock }: { stock: StockFundamentalData }) {
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
     const { score, labels } = calculateDipScore(stock);
 
     const getScoreColor = (s: number) => {
@@ -109,20 +116,20 @@ export default function StockCard({ stock }: { stock: StockFundamentalData }) {
                 {stock.nextEarnings && (
                     <div className="flex items-center gap-2 text-xs text-blue-400 font-medium pt-1">
                         <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                        <span>Earnings: {new Date(stock.nextEarnings.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                            {stock.nextEarnings.time && stock.nextEarnings.time !== 'N/A' && ` (${stock.nextEarnings.time})`}
+                        <span>Earnings: {mounted ? new Date(stock.nextEarnings.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '...'}
+                            {mounted && stock.nextEarnings.time && stock.nextEarnings.time !== 'N/A' && ` (${stock.nextEarnings.time})`}
                         </span>
                     </div>
                 )}
                 {stock.lastUpdated && (
                     <div className="pt-2 border-t border-white/5 mt-2">
                         <p className="text-[10px] text-gray-500 uppercase tracking-tight">
-                            Last Updated: {new Date(stock.lastUpdated).toLocaleString('en-US', {
+                            Last Updated: {mounted ? new Date(stock.lastUpdated).toLocaleString('en-US', {
                                 month: 'short',
                                 day: 'numeric',
                                 hour: '2-digit',
                                 minute: '2-digit'
-                            })}
+                            }) : '...'}
                             {stock.error && <span className="text-amber-500 ml-1">(Stale)</span>}
                         </p>
                     </div>
