@@ -6,18 +6,24 @@ import { Search, Filter, TrendingDown, LayoutGrid, List as ListIcon } from 'luci
 import StockCard from '@/components/StockCard';
 import { getStocksData, StockFundamentalData } from '@/lib/fmp';
 import { calculateDipScore } from '@/lib/scoring';
+import { createClient } from '@/utils/supabase/client';
+import { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface DashboardProps {
     initialStocks: StockFundamentalData[];
+    serverUser?: SupabaseUser | null;
 }
 
-export default function Dashboard({ initialStocks }: DashboardProps) {
+export default function Dashboard({ initialStocks, serverUser }: DashboardProps) {
     const [stocks, setStocks] = useState<StockFundamentalData[]>(initialStocks);
     const [loading, setLoading] = useState(false);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [searchTerm, setSearchTerm] = useState('');
     const [sortBy, setSortBy] = useState<'score' | 'fcfYield' | 'pe' | 'price' | 'name' | 'earningsDate'>('score');
     const [error, setError] = useState<string | null>(null);
+    const [user, setUser] = useState<SupabaseUser | null>(serverUser ?? null);
+
+    const supabase = createClient();
 
     // Defer the search term to keep the input responsive during rapid typing
     const deferredSearchTerm = useDeferredValue(searchTerm);
@@ -30,6 +36,9 @@ export default function Dashboard({ initialStocks }: DashboardProps) {
         // or passing them down, we'll implement a check.
 
         const fetchUserData = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            setUser(user);
+
             try {
                 const stored = localStorage.getItem('watchlist_symbols');
                 if (stored) {
@@ -116,8 +125,12 @@ export default function Dashboard({ initialStocks }: DashboardProps) {
             {/* Header & Search */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-black tracking-tight">Dip Finder</h1>
-                    <p className="text-gray-400">Discover undervalued stocks in your watchlist.</p>
+                    <h1 className="text-3xl font-black tracking-tight">
+                        {user ? `Hello, ${user.email?.split('@')[0]}` : 'Dip Finder'}
+                    </h1>
+                    <p className="text-gray-400">
+                        {user ? "Here's what's moving in your watchlist." : "Discover undervalued stocks in your watchlist."}
+                    </p>
                 </div>
 
                 <div className="relative group max-w-md w-full">

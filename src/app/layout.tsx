@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Layout from "@/components/Layout";
+import { createClient } from "@/utils/supabase/server";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -18,18 +19,25 @@ const themeScript = `
   })();
 `;
 
-export default function RootLayout({
+export default async function RootLayout({
     children,
 }: Readonly<{
     children: React.ReactNode;
 }>) {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
     return (
         <html lang="en" suppressHydrationWarning>
             <head>
-                <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+                <script
+                    id="theme-initializer"
+                    suppressHydrationWarning
+                    dangerouslySetInnerHTML={{ __html: themeScript }}
+                />
             </head>
-            <body className={inter.className}>
-                <Layout>{children}</Layout>
+            <body className={inter.className} suppressHydrationWarning>
+                <Layout serverUser={user}>{children}</Layout>
             </body>
         </html>
     );

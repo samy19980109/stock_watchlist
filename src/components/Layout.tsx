@@ -3,12 +3,18 @@
 import { ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, LineChart, List, Settings } from 'lucide-react';
+import { Home, LineChart, List, Settings, User } from 'lucide-react';
+import AuthStatus from './Auth/AuthStatus';
+import { User as SupabaseUser } from '@supabase/supabase-js';
 
-export default function Layout({ children }: { children: ReactNode }) {
+export default function Layout({ children, serverUser }: { children: ReactNode, serverUser?: SupabaseUser | null }) {
     const pathname = usePathname();
 
     const isActive = (path: string) => pathname === path;
+
+    const isLoginPage = pathname === '/login';
+
+    if (isLoginPage) return <>{children}</>;
 
     return (
         <div className="min-h-screen bg-[var(--background)] pb-20 md:pb-0 md:pt-16 text-[var(--foreground)] transition-colors duration-300">
@@ -38,7 +44,9 @@ export default function Layout({ children }: { children: ReactNode }) {
                         Settings
                     </Link>
                 </div>
-
+                <div className="flex items-center gap-4">
+                    <AuthStatus serverUser={serverUser} />
+                </div>
             </nav>
 
             <main className="max-w-7xl mx-auto p-4 md:p-8">
@@ -59,6 +67,9 @@ export default function Layout({ children }: { children: ReactNode }) {
                     <Settings size={20} />
                     <span>Settings</span>
                 </Link>
+                <div className="flex flex-col items-center gap-1 text-xs">
+                    <AuthStatus serverUser={serverUser} />
+                </div>
             </nav>
         </div>
     );
