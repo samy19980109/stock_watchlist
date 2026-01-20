@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useDeferredValue, useMemo } from 'react';
 import Link from 'next/link';
-import { Search, Filter, TrendingDown, LayoutGrid, List as ListIcon } from 'lucide-react';
+import { Search, Filter, TrendingDown, LayoutGrid, List as ListIcon, Info, ChevronDown, ChevronUp } from 'lucide-react';
 import StockCard from '@/components/StockCard';
 import { getStocksData, StockFundamentalData } from '@/lib/fmp';
 import { calculateDipScore } from '@/lib/scoring';
@@ -23,6 +23,12 @@ export default function Dashboard({ initialStocks, serverUser }: DashboardProps)
     const [sortBy, setSortBy] = useState<'score' | 'fcfYield' | 'pe' | 'price' | 'name' | 'earningsDate'>('score');
     const [error, setError] = useState<string | null>(null);
     const [user, setUser] = useState<SupabaseUser | null>(serverUser ?? null);
+    const [showFreeTierNotice, setShowFreeTierNotice] = useState(true);
+    const [isNoticeExpanded, setIsNoticeExpanded] = useState(false);
+
+    const FREE_TIER_SYMBOLS = [
+        'AAPL', 'TSLA', 'AMZN', 'MSFT', 'NVDA', 'GOOGL', 'META', 'NFLX', 'JPM', 'V', 'BAC', 'PYPL', 'DIS', 'T', 'PFE', 'COST', 'INTC', 'KO', 'TGT', 'NKE', 'SPY', 'BA', 'BABA', 'XOM', 'WMT', 'GE', 'CSCO', 'VZ', 'JNJ', 'CVX', 'PLTR', 'SQ', 'SHOP', 'SBUX', 'SOFI', 'HOOD', 'RBLX', 'SNAP', 'AMD', 'UBER', 'FDX', 'ABBV', 'ETSY', 'MRNA', 'LMT', 'GM', 'F', 'LCID', 'CCL', 'DAL', 'UAL', 'AAL', 'TSM', 'SONY', 'ET', 'MRO', 'COIN', 'RIVN', 'RIOT', 'CPRX', 'VWO', 'SPYG', 'NOK', 'ROKU', 'VIAC', 'ATVI', 'BIDU', 'DOCU', 'ZM', 'PINS', 'TLRY', 'WBA', 'MGM', 'NIO', 'C', 'GS', 'WFC', 'ADBE', 'PEP', 'UNH', 'CARR', 'HCA', 'TWTR', 'BILI', 'SIRI', 'FUBO', 'RKT'
+    ];
 
     const supabase = createClient();
 
@@ -112,6 +118,66 @@ export default function Dashboard({ initialStocks, serverUser }: DashboardProps)
 
     return (
         <div className="space-y-8">
+            {/* FMP Free Tier Notice */}
+            {showFreeTierNotice && (
+                <div className="relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-blue-500/5 backdrop-blur-xl -z-10" />
+                    <div className="border border-blue-500/20 rounded-3xl p-5 md:p-6 transition-all">
+                        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+                            <div className="p-3 bg-blue-500/10 rounded-2xl text-blue-400">
+                                <Info size={24} />
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="text-lg font-bold text-white mb-1">Financial Modeling Prep - Free Tier Info</h3>
+                                <p className="text-gray-400 text-sm leading-relaxed">
+                                    The FMP free tier supports only a specific set of symbols. For all US and Canadian stocks, a paid data plan is required.
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-3 w-full md:w-auto">
+                                <button
+                                    onClick={() => setIsNoticeExpanded(!isNoticeExpanded)}
+                                    className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-semibold transition-all border border-white/5"
+                                >
+                                    {isNoticeExpanded ? 'Hide Symbols' : 'View Symbols'}
+                                    {isNoticeExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                </button>
+                                <button
+                                    onClick={() => setShowFreeTierNotice(false)}
+                                    className="px-4 py-2 text-gray-400 hover:text-white text-sm font-medium transition-colors"
+                                >
+                                    Dismiss
+                                </button>
+                            </div>
+                        </div>
+
+                        {isNoticeExpanded && (
+                            <div className="mt-6 pt-6 border-t border-white/5">
+                                <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                                    {FREE_TIER_SYMBOLS.map(symbol => (
+                                        <span key={symbol} className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 rounded-md text-[10px] font-mono font-bold text-blue-300">
+                                            {symbol}
+                                        </span>
+                                    ))}
+                                </div>
+                                <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                    <p className="text-xs text-blue-400/80 italic">
+                                        Note: Symbols like indices might have delayed data.
+                                    </p>
+                                    <a
+                                        href="https://site.financialmodelingprep.com/developer/docs/pricing"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center text-sm text-blue-400 underline decoration-blue-400/30 underline-offset-4 hover:decoration-blue-400 font-medium"
+                                    >
+                                        Upgrade for full access
+                                    </a>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
             {/* Header & Search */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
