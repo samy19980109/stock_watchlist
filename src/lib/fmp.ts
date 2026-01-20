@@ -138,17 +138,25 @@ export async function getStocksData(symbols: string[]): Promise<StockFundamental
                     fetch(`${BASE_URL}/earnings?symbol=${symbol}&apikey=${FMP_API_KEY}`)
                 ]);
 
-                const safeJson = async (res: Response) => {
-                    if (!res.ok) return null;
-                    try { return await res.json(); } catch (e) { return null; }
+                const safeJson = async (res: Response, name: string) => {
+                    if (!res.ok) {
+                        console.warn(`[FMP] Fetch failed for ${symbol} ${name}: ${res.status} ${res.statusText}`);
+                        return null;
+                    }
+                    try {
+                        return await res.json();
+                    } catch (e) {
+                        console.error(`[FMP] JSON parse failed for ${symbol} ${name}:`, e);
+                        return null;
+                    }
                 };
 
                 const [quoteArr, ratiosArr, metricsArr, priceChangeArr, earningsArr] = await Promise.all([
-                    safeJson(quoteRes),
-                    safeJson(ratiosRes),
-                    safeJson(metricsRes),
-                    safeJson(priceChangeRes),
-                    safeJson(earningsRes)
+                    safeJson(quoteRes, 'quote'),
+                    safeJson(ratiosRes, 'ratios'),
+                    safeJson(metricsRes, 'metrics'),
+                    safeJson(priceChangeRes, 'priceChange'),
+                    safeJson(earningsRes, 'earnings')
                 ]);
 
                 const data: Partial<StockFundamentalData> = { symbol };
@@ -190,14 +198,17 @@ export async function getStocksData(symbols: string[]): Promise<StockFundamental
                     }
                 }
 
-                if (!data.name || !data.price) {
+                if (!data.name || data.price === undefined || data.price === null) {
+                    console.warn(`[FMP] Required data missing for ${symbol}: name=${data.name}, price=${data.price}`);
                     const stale = stocksMap.get(`stale_${symbol}`);
                     if (stale) {
+                        console.info(`[FMP] Using stale data for ${symbol}`);
                         return { ...stale, error: `Fresh data unavailable for ${symbol}. Using stale data.` };
                     }
                     return { symbol, error: `Symbol ${symbol} not found or no data available` };
                 }
 
+                console.info(`[FMP] Successfully fetched data for ${symbol} (${data.name})`);
                 data.lastUpdated = new Date().toISOString();
                 return data;
             } catch (error) {

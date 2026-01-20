@@ -30,15 +30,17 @@ export default function WatchlistPage() {
             return;
         }
 
+        setStatus({ type: 'loading' });
         try {
             await addSymbolToWatchlist(normalized);
             setSymbols([normalized, ...symbols]);
             setNewSymbol('');
             setStatus({ type: 'success', message: `Added ${normalized} successfully!` });
             setTimeout(() => setStatus({ type: 'idle' }), 3000);
-        } catch (err) {
-            setStatus({ type: 'error', message: `Failed to add ${normalized}.` });
-            setTimeout(() => setStatus({ type: 'idle' }), 3000);
+        } catch (err: any) {
+            console.error('Failed to add symbol:', err);
+            setStatus({ type: 'error', message: err.message || `Failed to add ${normalized}.` });
+            setTimeout(() => setStatus({ type: 'idle' }), 5000);
         }
     };
 
@@ -82,11 +84,15 @@ export default function WatchlistPage() {
                     </div>
                     <button
                         type="submit"
-                        disabled={!newSymbol.trim()}
+                        disabled={!newSymbol.trim() || status.type === 'loading'}
                         className="bg-white text-black hover:bg-gray-200 disabled:opacity-50 disabled:hover:bg-white px-8 py-3 rounded-2xl font-black flex items-center justify-center gap-2 transition-all whitespace-nowrap"
                     >
-                        <Plus size={20} />
-                        Add Symbol
+                        {status.type === 'loading' ? (
+                            <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                        ) : (
+                            <Plus size={20} />
+                        )}
+                        {status.type === 'loading' ? 'Adding...' : 'Add Symbol'}
                     </button>
                 </div>
                 {status.type === 'error' && (

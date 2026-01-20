@@ -1,5 +1,6 @@
 import { createClient } from '@/utils/supabase/client';
 import { Database } from '@/types/supabase';
+import { getStocksData } from './fmp';
 
 const WATCHLIST_STORAGE_KEY = 'watchlist_symbols';
 const DEFAULT_SYMBOLS = ['AAPL', 'ADBE', 'AMD', 'COST', 'MSFT', 'GOOGL', 'AMZN', 'NFLX', 'META', 'TSLA', 'NVDA', 'TSM', 'UBER', 'UNH', 'V'];
@@ -77,10 +78,28 @@ export async function addSymbolToWatchlist(symbol: string): Promise<void> {
         .eq('name', 'Default')
         .single();
 
+    // Ensure stock exists in stocks table first (FK constraint)
+    try {
+        const stocks = await getStocksData([symbol]);
+        if (stocks.length === 0 || stocks[0].error && !stocks[0].name) {
+            throw new Error(`Symbol ${symbol} could not be validated or found.`);
+        }
+    } catch (e: any) {
+        console.error('Error validating symbol before addition:', e);
+        throw new Error(e.message || `Failed to validate symbol ${symbol}`);
+    }
+
     if (watchlist) {
-        await supabase
+        const { error: upsertError } = await supabase
             .from('watchlist_items')
             .upsert({ watchlist_id: watchlist.id, stock_symbol: symbol }, { onConflict: 'watchlist_id, stock_symbol' });
+
+        if (upsertError) {
+            console.error('Error adding symbol to watchlist:', upsertError);
+            throw new Error(`Failed to add ${symbol}: ${upsertError.message}`);
+        }
+    } else {
+        throw new Error('Default watchlist not found. Please try logging out and back in.');
     }
 }
 
@@ -146,6 +165,14 @@ export async function syncLocalWatchlistToSupabase(): Promise<void> {
     }
 
     if (watchlist) {
+        // Ensure all stocks exist in stocks table first (FK constraint)
+        try {
+            await getStocksData(symbols);
+        } catch (e) {
+            console.error('Error validating symbols during sync:', e);
+            // We continue as some might have succeeded or already exist
+        }
+
         // Batch insert items
         const itemsToInsert = symbols.map(symbol => ({
             watchlist_id: watchlist!.id,
