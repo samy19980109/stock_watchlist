@@ -25,6 +25,7 @@ export default function Dashboard({ initialStocks, serverUser }: DashboardProps)
     const [user, setUser] = useState<SupabaseUser | null>(serverUser ?? null);
     const [showFreeTierNotice, setShowFreeTierNotice] = useState(true);
     const [isNoticeExpanded, setIsNoticeExpanded] = useState(false);
+    const [isFormulaExpanded, setIsFormulaExpanded] = useState(false);
 
     const FREE_TIER_SYMBOLS = [
         'AAPL', 'TSLA', 'AMZN', 'MSFT', 'NVDA', 'GOOGL', 'META', 'NFLX', 'JPM', 'V', 'BAC', 'PYPL', 'DIS', 'T', 'PFE', 'COST', 'INTC', 'KO', 'TGT', 'NKE', 'SPY', 'BA', 'BABA', 'XOM', 'WMT', 'GE', 'CSCO', 'VZ', 'JNJ', 'CVX', 'PLTR', 'SQ', 'SHOP', 'SBUX', 'SOFI', 'HOOD', 'RBLX', 'SNAP', 'AMD', 'UBER', 'FDX', 'ABBV', 'ETSY', 'MRNA', 'LMT', 'GM', 'F', 'LCID', 'CCL', 'DAL', 'UAL', 'AAL', 'TSM', 'SONY', 'ET', 'MRO', 'COIN', 'RIVN', 'RIOT', 'CPRX', 'VWO', 'SPYG', 'NOK', 'ROKU', 'VIAC', 'ATVI', 'BIDU', 'DOCU', 'ZM', 'PINS', 'TLRY', 'WBA', 'MGM', 'NIO', 'C', 'GS', 'WFC', 'ADBE', 'PEP', 'UNH', 'CARR', 'HCA', 'TWTR', 'BILI', 'SIRI', 'FUBO', 'RKT'
@@ -189,17 +190,72 @@ export default function Dashboard({ initialStocks, serverUser }: DashboardProps)
                     </p>
                 </div>
 
-                <div className="relative group max-w-md w-full">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-500 transition-colors" size={20} />
-                    <input
-                        type="text"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder="Search symbol or name (e.g. NVDA)"
-                        className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
-                    />
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => setIsFormulaExpanded(!isFormulaExpanded)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${isFormulaExpanded ? 'bg-blue-600 text-white border-blue-500' : 'bg-white/5 text-blue-400 border-white/5 hover:bg-white/10'}`}
+                    >
+                        <Info size={16} />
+                        How it works
+                    </button>
+                    <div className="relative group max-w-md w-full">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-500 transition-colors" size={20} />
+                        <input
+                            type="text"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            placeholder="Search symbol or name (e.g. NVDA)"
+                            className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                        />
+                    </div>
                 </div>
             </div>
+
+            {/* Dip Score Formula Explanation */}
+            {isFormulaExpanded && (
+                <div className="glass rounded-3xl p-6 border-blue-500/30 bg-blue-500/5 relative overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300">
+                    <div className="flex flex-col md:flex-row gap-8">
+                        <div className="flex-1">
+                            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                                <TrendingDown size={24} className="text-blue-400" />
+                                How the Dip Score is calculated
+                            </h3>
+                            <p className="text-gray-400 text-sm mb-6 leading-relaxed">
+                                Our proprietary Dip Score identifies high-quality companies trading at attractive valuations and technical levels. A score over 70 indicates a strong buying opportunity.
+                            </p>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                                    <div className="text-blue-400 font-bold text-lg mb-1">50% Weight</div>
+                                    <div className="text-white font-semibold mb-2">Technical Trend</div>
+                                    <p className="text-xs text-gray-500">Based on distance from the 200-day SMA. Lower is better, indicating a deeper "dip" from long-term trends.</p>
+                                </div>
+                                <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                                    <div className="text-emerald-400 font-bold text-lg mb-1">30% Weight</div>
+                                    <div className="text-white font-semibold mb-2">FCF Yield</div>
+                                    <p className="text-xs text-gray-500">Measures profitability and value. Higher Free Cash Flow relative to market cap signifies a stronger margin of safety.</p>
+                                </div>
+                                <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                                    <div className="text-amber-400 font-bold text-lg mb-1">20% Weight</div>
+                                    <div className="text-white font-semibold mb-2">Earnings Trend</div>
+                                    <p className="text-xs text-gray-500">Compares Current P/E with Forward P/E. A lower Forward P/E suggests earnings growth is expected.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="md:w-64 flex flex-col justify-center items-center text-center p-6 bg-blue-600/10 rounded-2xl border border-blue-500/20">
+                            <div className="text-3xl font-black text-blue-400 mb-2">Formula</div>
+                            <div className="text-[10px] font-mono text-gray-400 space-y-2 text-left">
+                                <p>(SMA_Score × 0.5) +</p>
+                                <p>(FCF_Score × 0.3) +</p>
+                                <p>(PE_Trend × 0.2)</p>
+                                <div className="h-px bg-white/10 my-2" />
+                                <p className="text-white">× 100 = Dip Score</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Error Message */}
             {error && (
