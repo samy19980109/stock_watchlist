@@ -11,7 +11,6 @@ export default function StockCard({ stock }: { stock: StockFundamentalData }) {
     }, []);
 
     const { score, labels } = calculateDipScore(stock);
-
     const getScoreColor = (s: number) => {
         if (s > 70) return 'text-emerald-500';
         if (s > 40) return 'text-amber-500';
@@ -19,6 +18,14 @@ export default function StockCard({ stock }: { stock: StockFundamentalData }) {
     };
 
     const hasData = !!stock.name;
+
+    const formatMarketCap = (cap?: number) => {
+        if (!cap) return 'N/A';
+        if (cap >= 1e12) return `$${(cap / 1e12).toFixed(2)}T`;
+        if (cap >= 1e9) return `$${(cap / 1e9).toFixed(1)}B`;
+        if (cap >= 1e6) return `$${(cap / 1e6).toFixed(1)}M`;
+        return `$${cap.toLocaleString()}`;
+    };
 
     if (stock.error && !hasData) {
         return (
@@ -64,21 +71,25 @@ export default function StockCard({ stock }: { stock: StockFundamentalData }) {
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 text-xs">
+            <div className="grid grid-cols-3 gap-3 text-[10px] md:text-xs">
                 <div className="bg-white/5 p-2 rounded-lg">
-                    <p className="text-gray-500 mb-1">Price</p>
+                    <p className="text-gray-500 mb-0.5">Price</p>
                     <p className="font-semibold">${stock.price.toFixed(2)}</p>
                 </div>
                 <div className="bg-white/5 p-2 rounded-lg">
-                    <p className="text-gray-500 mb-1">FCF Yield</p>
+                    <p className="text-gray-500 mb-0.5">Market Cap</p>
+                    <p className="font-semibold">{formatMarketCap(stock.marketCap)}</p>
+                </div>
+                <div className="bg-white/5 p-2 rounded-lg">
+                    <p className="text-gray-500 mb-0.5">FCF Yield</p>
                     <p className="font-semibold">{(stock.fcfYield * 100).toFixed(1)}%</p>
                 </div>
                 <div className="bg-white/5 p-2 rounded-lg">
-                    <p className="text-gray-500 mb-1">P/E (TTM)</p>
+                    <p className="text-gray-500 mb-0.5">P/E (TTM)</p>
                     <p className="font-semibold">{stock.pe.toFixed(1)}</p>
                 </div>
                 <div className="bg-white/5 p-2 rounded-lg">
-                    <p className="text-gray-500 mb-1">P/E (FWD)</p>
+                    <p className="text-gray-500 mb-0.5">P/E (FWD)</p>
                     <p className="font-semibold">{stock.peForward.toFixed(1)}</p>
                 </div>
             </div>

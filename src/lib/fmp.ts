@@ -22,6 +22,7 @@ export interface PriceChangeData {
 
 interface StockMetadata {
     priceChanges?: PriceChangeData;
+    marketCap?: number;
     nextEarnings?: {
         date: string;
         time?: string;
@@ -39,6 +40,7 @@ export interface StockFundamentalData {
     sma100: number;
     sma50: number;
     sma20: number;
+    marketCap?: number;
     priceChanges?: PriceChangeData;
     nextEarnings?: {
         date: string;
@@ -74,7 +76,10 @@ export async function getStocksData(symbols: string[]): Promise<StockFundamental
             const cachedPrice = Number(cachedData.current_price);
             const metadata = cachedData.metadata as unknown as StockMetadata | null;
 
-            if (now - lastUpdated < CACHE_EXPIRY_MS && cachedPrice > 0 && metadata?.priceChanges) {
+            const isValidCache = now - lastUpdated < CACHE_EXPIRY_MS && cachedPrice > 0;
+            const hasMetadata = metadata && (metadata.priceChanges || metadata.marketCap);
+
+            if (isValidCache && hasMetadata) {
                 stocksMap.set(cachedData.symbol, {
                     symbol: cachedData.symbol,
                     name: cachedData.name,
@@ -86,6 +91,7 @@ export async function getStocksData(symbols: string[]): Promise<StockFundamental
                     sma100: Number(cachedData.sma_100),
                     sma50: Number(cachedData.sma_50),
                     sma20: Number(cachedData.sma_20),
+                    marketCap: metadata.marketCap,
                     priceChanges: metadata.priceChanges,
                     nextEarnings: metadata.nextEarnings,
                     lastUpdated: cachedData.last_updated ?? undefined
@@ -103,6 +109,7 @@ export async function getStocksData(symbols: string[]): Promise<StockFundamental
                     sma100: Number(cachedData.sma_100),
                     sma50: Number(cachedData.sma_50),
                     sma20: Number(cachedData.sma_20),
+                    marketCap: metadata?.marketCap,
                     priceChanges: metadata?.priceChanges,
                     nextEarnings: metadata?.nextEarnings,
                     lastUpdated: cachedData.last_updated ?? undefined
@@ -163,10 +170,14 @@ export async function getStocksData(symbols: string[]): Promise<StockFundamental
 
                 if (Array.isArray(quoteArr) && quoteArr[0]) {
                     const item = quoteArr[0];
+                    console.info(`[FMP] Quote for ${symbol}: price=${item.price}, marketCap=${item.marketCap}`);
                     data.name = item.name;
                     data.price = item.price;
+                    data.marketCap = item.marketCap || 0;
                     data.sma200 = item.priceAvg200 || 0;
                     data.sma50 = item.priceAvg50 || 0;
+                } else {
+                    console.warn(`[FMP] No quote data returned for ${symbol}`);
                 }
 
                 if (Array.isArray(ratiosArr) && ratiosArr[0]) {
@@ -246,6 +257,13 @@ export async function getStocksData(symbols: string[]): Promise<StockFundamental
             stocksMap.set(symbol, fullData);
 
             if (!data.error) {
+                const metadataToSave = {
+                    priceChanges: fullData.priceChanges,
+                    marketCap: fullData.marketCap,
+                    nextEarnings: fullData.nextEarnings
+                };
+                console.info(`[Supabase] Upserting ${symbol} with metadata:`, JSON.stringify(metadataToSave));
+
                 await supabase.from('stocks').upsert({
                     symbol,
                     name: fullData.name,
@@ -258,10 +276,7 @@ export async function getStocksData(symbols: string[]): Promise<StockFundamental
                     sma_50: fullData.sma50,
                     sma_20: fullData.sma20,
                     last_updated: new Date().toISOString(),
-                    metadata: {
-                        priceChanges: fullData.priceChanges,
-                        nextEarnings: fullData.nextEarnings
-                    } as unknown as Json
+                    metadata: metadataToSave as unknown as Json
                 });
             }
 
